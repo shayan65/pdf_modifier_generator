@@ -1,0 +1,14 @@
+flask==1.1.1
+opencv-contrib-python
+opencv-python
+pillow>=8.3.2
+werkzeug==2.0.0
+pdf2image
+fuzzywuzzy==0.15.0
+imutils==0.5.4
+zipfile37
+zipfile38
+regex==2021.4.4
+numpy==1.19.3
+pyahocorasick==1.4.2
+Shapely==1.7.1

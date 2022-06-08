@@ -1,0 +1,36 @@
+<!doctype html>
+<html style="height:100%;">
+<div class="container">
+<h2 class="text-left" > <span style="color:rgb(47, 0, 255)"> Document Generator </span> </h2>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <br><br>
+    <form action="{{url_for('generate')}}" method=post enctype=multipart/form-data>
+    
+    <div class="text-center">
+        <div class="input-group">
+            <div class="custom-file">
+                <input type="file" name="file" class="custom-file-input" id="inputGroupFile01"
+                    aria-describedby="inputGroupFileAddon01" >
+                <label class="custom-file-label" for="inputGroupFile01">Upload Document</label>
+            </div>
+        </div>
+
+    </div>
+    <br>
+    <button type="submit" class="btn btn-raised btn-primary">Generate Document</button> 
+</form>
+</body>
+    
+
+</div>
+    <!-- <script>
+        var folder = document.getElementById("folder");
+        console.log(folder.value)
+    </script> -->
+<!-- </body> -->
+</html>

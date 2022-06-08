@@ -1,0 +1,222 @@
+<!doctype html>
+<html style="height:100%;">
+
+<head>
+    <title>Annotate Your Images</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/cerulean/bootstrap.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+</head>
+
+<style>
+  .sidebar{
+    width: 25%;
+    height: 100%;
+    float: left;
+    z-index: 10;
+    margin-bottom: 0px;
+  }
+  .content{
+    width: 75%;
+    height: 100%;
+    float: right;
+    z-index: 10;
+    margin-bottom:0px;
+  }
+  .row{
+    padding: 10px 5px;
+    border-bottom: 3px solid black;
+  }
+  .image-name{
+    font-size: 16px;
+  }
+  .counter{
+    border: 2px solid red;
+    border-radius: 50%;
+    font-size: 18px;
+  }
+  .content-image{
+    margin-top:10px;
+  }
+</style>
+
+<body style="height:100%;">
+    <nav id="sidebar" class="sidebar">
+    <div class="panel panel-default" style="height:100%;">
+        <div class="panel-heading">
+          <h3 class="panel-title"><b><center>Labels</center></b></h3>
+        </div>
+        <script>
+          var label = function(id, name) {
+            window.location.replace("/label/" + id + "?name=" + name);
+          }
+        </script>
+          <div class="panel-body">
+              <div class="list-group">
+                {% for label in labels %}
+                  <div class="list-group-item">
+                      <div class="input-group">
+                          <span class="input-group-addon" id="id">{{ label.id }}</span>
+                          {% if label.name %}
+                              <text style="background-color:#E5E7E9;" class="form-control custom-control" style="resize:none">{{ label.name }}</text>
+                          {% else %}
+                              <input id= "{{ label.id }}" onkeydown="if (event.keyCode == 13) { label(this.id, this.value); }" type="text" class="form-control" placeholder="Label Name" autofocus></input>
+                          {% endif %}
+                          <span class="input-group-btn">
+                              <button id= "{{ label.id }}" class="btn btn-danger" onclick="window.location.replace('/remove/' + this.id)" type="button"><b>-<b></button>
+                          </span>
+                      </div>
+                  </div>
+                  {% endfor %}
+              </div>
+          </div>
+      </div>
+  </nav>
+
+<div id="content" class="container content">
+    <div class="row">
+    <span class="counter"><b>{{ head }} / {{ len }}</b></span>
+    <span class="image-name">{{image}}</span>
+    {% if not_end %}
+      <a href="/next" class="btn btn-primary" style="float:right; font-size:18px;" type="button">
+        <span class="glyphicon glyphicon-arrow-right"></span>
+      </a>
+    {% else %}
+      <a href="/next" class="btn btn-primary" style="float:right; font-size:18px;" type="button">
+        <span class="glyphicon glyphicon-ok"></span>
+      </a>
+    {% endif %}
+    </div>
+    <div class="content-image">
+        <canvas id="canvas" style="width:100%; height:80%; margin: 0; padding: 0;"></canvas>
+    </div>
+    
+    <script>
+      var labels = {{ labels|tojson|safe }};
+      var c = document.getElementById("canvas");
+      var ctx = c.getContext("2d");
+      var drawLabels = function(id, xMin, xMax, yMin, yMax) {
+        ctx.strokeStyle = "red";
+        //ctx.fillStyle = "red";
+        ctx.rect(xMin, yMin, xMax - xMin, yMax - yMin);
+        ctx.lineWidth="4";
+        ctx.stroke();
+        ctx.font = "30px Arial";
+        ctx.fillText("id: " + id, xMin,yMin-10);
+      };
+
+      //load and display image
+      var image = new Image();
+      image.onload = function(e) {
+        ctx.canvas.width = image.width;
+        ctx.canvas.height = image.height;
+        c.width = image.width;
+        c.height = image.height;
+        ctx.drawImage(image, 0, 0);
+        console.log(labels);
+        for (i = 0; i < labels.length; i++){
+            drawLabels(labels[i].id, labels[i].xMin, labels[i].xMax, labels[i].yMin, labels[i].yMax);
+        }
+      };
+      image.style.display="block";
+      image.src = "{{directory}}/{{ image }}";
+
+    // this flage is true when the user is dragging the mouse
+    var isDown=false;
+    // these vars will hold the starting mouse position
+    var startX, startY, mouseX, mouseY, endX, endY;
+
+    function calcPoints(startX, startY, endX, endY){
+      var temp = 0;
+      if(startX>endX){
+        temp = startX;
+        startX = endX;
+        endX = temp; 
+      }
+      if(startY>endY){
+        temp = startY;
+        startY = endY;
+        endY = temp;
+      }
+      return [startX,startY,endX,endY]
+    }
+
+    function handleMouseDown(e){
+      e.preventDefault();
+      e.stopPropagation();
+      // save the starting x/y of the rectangle
+      
+      startX=parseInt((image.width / c.scrollWidth) * e.offsetX);
+      startY=parseInt((image.height / c.scrollHeight) * e.offsetY);
+      // set a flag indicating the drag has begun
+      isDown=true;
+    }
+
+    function handleMouseUp(e){
+      e.preventDefault();
+      e.stopPropagation();
+      // the drag is over, clear the dragging flag
+      if(isDown){
+        endX = parseInt((image.width / c.scrollWidth) * e.offsetX);
+        endY = parseInt((image.height / c.scrollHeight) * e.offsetY);
+        [startX,startY,endX,endY] = calcPoints(startX,startY,endX,endY)
+        window.location.replace("/add/" + (labels.length + 1) +
+              "?xMin=" + startX +
+              "&xMax=" + endX +
+              "&yMin=" + startY +
+              "&yMax=" + endY);
+        isDown=false;
+      }
+    }
+
+    function handleMouseOut(e){
+      e.preventDefault();
+      e.stopPropagation();
+      // the drag is over, clear the dragging flag
+      if(isDown){
+      endX = parseInt((image.width / c.scrollWidth) * e.offsetX);
+      endY = parseInt((image.height / c.scrollHeight) * e.offsetY);
+      [startX,startY,endX,endY] = calcPoints(startX,startY,endX,endY)
+      window.location.replace("/add/" + (labels.length + 1) +
+            "?xMin=" + startX +
+            "&xMax=" + endX +
+            "&yMin=" + startY +
+            "&yMax=" + endY);
+      isDown=false;
+      }
+    }
+
+    function handleMouseMove(e){
+      e.preventDefault();
+      e.stopPropagation();
+      // if we're not dragging, just return
+      if(!isDown){return;}
+      // get the current mouse position
+      mouseX=parseInt((image.width / c.scrollWidth) * e.offsetX);
+      mouseY=parseInt((image.height / c.scrollHeight) * e.offsetY);
+      ctx.strokeStyle = "red";
+      ctx.lineWidth="4";
+      ctx.stroke();
+      // clear the canvas
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(image, 0, 0);
+      // calculate the rectangle width/height based
+      // on starting vs current mouse position
+      var width=mouseX-startX;
+      var height=mouseY-startY;
+
+      // draw a new rect from the start position 
+      // to the current mouse position
+      ctx.strokeRect(startX,startY,width,height);
+    }
+    // listen for mouse events
+    $("#canvas").mousedown(function(e){handleMouseDown(e);});
+    $("#canvas").mousemove(function(e){handleMouseMove(e);});
+    $("#canvas").mouseup(function(e){handleMouseUp(e);});
+    $("#canvas").mouseout(function(e){handleMouseOut(e);});
+    
+    </script>
+</div>
+</body>
+</html>
