@@ -21,6 +21,7 @@ from flask import (
 )
 import uuid
 import logging
+import glob
 import shutil
 from pdf2image import convert_from_path
 app = Flask(__name__)
@@ -38,6 +39,16 @@ app.config["DOWNLOAD_FOLDER"] = DOWNLOAD_FOLDER
 ZIP_FOLDER = os.path.basename(".") + "/static/tmp/zip"
 app.config["ZIP_FOLDER"] = ZIP_FOLDER
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
+
+def mk_dir(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+for path in [os.path.basename(".") + "/static/tmp",
+             os.path.basename(".")+"/static/tmp/download",
+             os.path.basename(".")+"/static/tmp/upload"]:
+    mk_dir(path)
+
+
 # Secret key for sessions encryption
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 __author__ = "Shayan Hemmatiyan <shemmatiyan@gliquidx.com>"
@@ -50,10 +61,13 @@ logging.getLogger("werkzeug").setLevel(logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
 
 
+
 @app.route("/health")
 def health():
     LOGGER.info("Application is running successfully!")
     return "App is Running!"
+
+
 
 def upload_folder(uid):
     return os.path.join(UPLOAD_FOLDER, uid)
@@ -66,14 +80,9 @@ def download_folder(uid):
 def make_tmp_dirs(uid):
     LOGGER.info("making tmp dirs for uid: " + uid)
     try:
-        if not os.path.exists(download_folder(uid)):
-            os.makedirs(download_folder(uid))
-
-        if not os.path.exists(upload_folder(uid)):
-            os.makedirs(upload_folder(uid))
-
-        if not os.path.exists(zip_folder(uid)):
-            os.makedirs(zip_folder(uid))
+        mk_dir(download_folder(uid))
+        mk_dir(upload_folder(uid))
+        mk_dir(zip_folder(uid))
 
     except:
         LOGGER.error("error while making tmp dirs")
@@ -133,6 +142,7 @@ def generate():
         # files = request.files.getlist("file")
 
         app.config["download_folder"] = str(download_folder(uid))
+        app.config["upload_folder"]=str(upload_folder(uid))
         img_paths = [str(upload_folder(uid) + "/" + file.filename)]
         for img_path in img_paths:
             pages = convert_from_path(img_path,200)
@@ -178,9 +188,11 @@ def generate():
 @app.route('/tagger')
 def tagger():
     if (app.config["HEAD"] == len(app.config["FILES"])):
+        app.config["HEAD"] = 0
         return redirect(url_for('final'))
     directory = app.config["download_folder"].replace("\\","/")
     print("directory", directory)
+    print("Is directory existed? ",os.path.exists(directory))
     image = app.config["FILES"][app.config["HEAD"]].replace("\\","/")
     image = fileName(image) +"."+image.split(".")[-1]
     file_ = directory+"/"+image
@@ -255,8 +267,16 @@ def images(f):
 
 @app.route('/download')
 def download():
-    shutil.copyfile('out.csv', 'images/annotations.csv')
+    mk_dir("images")
+    # shutil.copyfile('out.csv', 'images/annotations.csv')
+    for file_ in glob.glob(os.path.join(app.config["download_folder"], "gen*")):
+        shutil.copy(file_,"images/"+fileName(file_)+".png" )
     shutil.make_archive('final', 'zip', 'images')
+    shutil.rmtree(app.config["download_folder"])
+    shutil.rmtree(app.config["upload_folder"])
+    shutil.rmtree("images")
+    
+    
     return send_file('final.zip',
                      mimetype='text/csv',
                      attachment_filename='final.zip',

@@ -29,7 +29,7 @@ class Generate:
     def gen(self):
         new_img_ = self.img.copy()
         font = cv2.FONT_HERSHEY_DUPLEX
-        fontScale = 1
+        scale=0.5
         color = (0,0,0)
         start = self.midpoint(self.bb[0][0]+1, self.bb[0][0]+1 , self.bb[0][1]-1, self.bb[1][1]-1)
         end = self.midpoint(self.bb[1][0], self.bb[1][0] , self.bb[0][1], self.bb[1][1])
@@ -40,6 +40,7 @@ class Generate:
         cv2.line(mask, (int(start[0]), int(start[1])), (int(end[0]), int(end[1])),255, tickness)
         img_generated = cv2.inpaint(new_img_, mask,3, cv2.INPAINT_NS)
         print("bb", self.bb, (int(start[0]), int(start[1])))
+        fontScale = tickness/(25/scale)
         img_generated=cv2.putText(img_generated, self.txt,start_txt,\
              font,fontScale ,color, 1, cv2.LINE_AA)
         print("file", str(self.download_f)+"/gen_"+str(self.fileName(self.image_path) +".png"))
