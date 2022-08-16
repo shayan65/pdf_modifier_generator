@@ -124,7 +124,7 @@ def generate():
         #     pass
         # os.mkdir('./images')
         uid = request.form.get("documentId")
-
+        mk_dir("tmp")
         if not uid:
             uid = str(uuid.uuid4())
             LOGGER.info("generated uid: " + uid)
