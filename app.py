@@ -28,6 +28,7 @@ app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 import numpy as np
 from pathlib import Path
+import img2pdf
 
 
 
@@ -269,8 +270,11 @@ def images(f):
 def download():
     mk_dir("images")
     # shutil.copyfile('out.csv', 'images/annotations.csv')
+    
     for file_ in glob.glob(os.path.join(app.config["download_folder"], "gen*")):
         shutil.copy(file_,"images/"+fileName(file_)+".png" )
+    with open("images/gen.pdf", "wb") as f:
+        f.write(img2pdf.convert(["images/"+str(i) for i in os.listdir("images/") if i.endswith(".png")]))
     shutil.make_archive('final', 'zip', 'images')
     shutil.rmtree(app.config["download_folder"])
     shutil.rmtree(app.config["upload_folder"])
